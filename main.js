@@ -4,23 +4,16 @@ const ctx = canvas.getContext("2d");
 //sprite size = 160 x 160 pixels
 const spriteSize = 160; 
 
-const playerImg = new Image();
-const playerImgDir = "/images/player sprites/";
-const playerImages = {
-    front: playerImgDir + "playerFront.png",
-    back: playerImgDir + "playerBack.png",
-    left: playerImgDir + "playerLeft.png",
-    right: playerImgDir + "playerRight.png"
-
-}
-
-const grassImg = new Image();
-grassImg.src = "/images/other/grass.png";
-
-playerImg.src = playerImages.front;
-
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
+
+let runtime = 0;
+let runtimeMillis = 0;
+
+let bullets = [];
+let enemies = [];
+let bulletSpeed = 10;
+const bulletLifespan = 3.5;
 
 const Vector2 = class {
     constructor(x, y){
@@ -29,36 +22,54 @@ const Vector2 = class {
     }
 }
 
-let player = {
-    pos: new Vector2(10, 10),
-    vel: new Vector2(0, 0),
-    width: 160,
-    height: 160,
-    moveSpeed: 2.5
+const Bullet = class {
+    constructor(pos, vel){
+        this.pos = pos;
+        this.vel = vel;
+        this.timeAlive = runtime;
+    }
 }
 
-const grass = {
-    pos: new Vector2(500, 500)
+const Enemy = class {
+    constructor(pos, vel, health){
+        this.pos = pos;
+        this.vel = vel;
+        this.health = health;
+    }
+}
+
+let player = {
+    pos: new Vector2(100, 100),
+    vel: new Vector2(0, 0),
+    width: 50,
+    height: 50,
+    moveSpeed: 2.5,
+    health: 10
 }
 
 function movePlayer(){
-    
-    if (player.vel.x > 0) {
-        playerImg.src = playerImages.right;
+    if((player.pos.x + (player.width / 2)) + player.vel.x <= canvas.width && (player.pos.x - (player.width / 2)) + player.vel.x >= 0){
+        player.pos.x += player.vel.x;
     }
-    else if (player.vel.x < 0) {
-        playerImg.src = playerImages.left;
+    if((player.pos.y + (player.height / 2)) + player.vel.y <= canvas.height && (player.pos.y - (player.height / 2)) + player.vel.y >= 0){
+        player.pos.y += player.vel.y;
     }
-    else if (player.vel.y < 0) {
-        playerImg.src = playerImages.back;
-    }
-    else if (player.vel.y > 0) {
-        playerImg.src = playerImages.front;
-    }
-
-    player.pos.x += player.vel.x;
-    player.pos.y += player.vel.y;
 }
+
+function shoot(mousePos){
+    let dX = mousePos.x - player.pos.x;
+    let dY = mousePos.y - player.pos.y;
+
+    let dLength = Math.sqrt(dX ** 2 + dY ** 2);
+
+    newVel = new Vector2(dX / dLength, dY / dLength);
+    newBullet = new Bullet(new Vector2(player.pos.x, player.pos.y), newVel);
+    bullets.push(newBullet);
+}
+
+canvas.addEventListener("click", (event) => {
+    shoot(new Vector2(event.pageX, event.pageY));
+})
 
 document.addEventListener("keydown", (event) => {
     if(event.key == "w" && player.pos.y < canvas.height){
@@ -73,6 +84,7 @@ document.addEventListener("keydown", (event) => {
     else if(event.key == "d"){
         player.vel.x = player.moveSpeed;
     }
+
 })
 
 document.addEventListener("keyup", (event) => {
@@ -94,24 +106,40 @@ function drawScreen(){
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     //draw player
-    ctx.drawImage(playerImg, 
-        player.pos.x + (player.width / 2), 
-        player.pos.y + (player.height / 2), player.width, 
-        player.height)
+    ctx.fillStyle = "#7E6B8F";
+    ctx.fillRect(player.pos.x - (player.width / 2), player.pos.y - (player.height / 2), player.width, player.height);
 
-    //draw grass
-    ctx.drawImage(grassImg, grass.pos.x + (spriteSize / 2), grass.pos.y + (spriteSize / 2));
-}
+    for (let i = 0; i < bullets.length; i++) {
+        let b = bullets[i];
+        
+        if(runtime - b.timeAlive >= bulletLifespan){
+            bullets.splice(i, i-1);
+        }
 
-function collisionCheck(){
-    //grass
-    
+        b.pos.x += b.vel.x * bulletSpeed;
+        b.pos.y += b.vel.y * bulletSpeed;
+        ctx.fillStyle = "black";
+        ctx.fillRect(b.pos.x, b.pos.y, 10, 10);
+    }
 }
 
 function gameLoop(){
+    runtimeMillis++;
+    if(runtimeMillis === 1000){
+        runtime++;
+        runtimeMillis = 0;
+    }
+
     movePlayer();
     drawScreen();
-    collisionCheck();
 }
 
-setInterval(() => {gameLoop()}, .5); 
+document.getElementById("canvas").onwheel = function(event){
+    event.preventDefault();
+};
+
+document.getElementById("canvas").onmousewheel = function(event){
+    event.preventDefault();
+};
+
+setInterval(() => {gameLoop()}, 1); 
