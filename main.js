@@ -1,3 +1,5 @@
+// color palette: https://coolors.co/201e1f-ff4000-4381c1-feefdd-50b2c0
+
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
 
@@ -29,12 +31,20 @@ const Bullet = class {
     }
 }
 
+const enemyTypes = {
+    "speedster": {speed: 1.7, health: 2, size: 40},
+    "ninja": {speed: 1, health: 3, size: 50},
+    "tank": {speed: .7, health: 5, size: 65}
+}
+
 const Enemy = class {
-    constructor(pos, vel, health, size){
+    constructor(pos, vel, type){
         this.pos = pos;
         this.vel = vel;
-        this.health = health;
-        this.size = size;
+        this.type = type;
+        this.health = enemyTypes[type].health;
+        this.size = enemyTypes[type].size;
+        this.speed = enemyTypes[type].speed
     }
 }
 
@@ -69,8 +79,32 @@ function shoot(mousePos){
 }
 
 function drawEnemy(enemy){
-    ctx.fillStyle = "#FF4000";
-    ctx.fillRect(enemy.pos.x - (enemy.size / 2), enemy.pos.y - (enemy.size / 2), enemy.size, enemy.size);
+    if(enemy.type === "speedster"){
+        //speedster
+        ctx.fillStyle = "#4381C1";
+        ctx.fillRect(enemy.pos.x - (enemy.size / 2), enemy.pos.y - (enemy.size / 2), enemy.size, enemy.size);
+    }
+    else if(enemy.type === "ninja"){
+        //ninja
+        ctx.fillStyle = "#201E1F";
+        ctx.fillRect(enemy.pos.x - (enemy.size / 2), enemy.pos.y - (enemy.size / 2), enemy.size, enemy.size);
+        ctx.fillStyle = "#FEEFDD";
+        ctx.fillRect(enemy.pos.x - (enemy.size / 2) * .8, enemy.pos.y - (enemy.size / 2) * .8, enemy.size*0.8, enemy.size*.4);
+    }
+    else{
+        //tank
+        ctx.fillStyle = "#FF4000";
+        ctx.fillRect(enemy.pos.x - (enemy.size / 2), enemy.pos.y - (enemy.size / 2), enemy.size, enemy.size);
+    }
+    
+}
+
+function moveEnemy(enemy){
+    enemy.vel.x = Math.sign(player.pos.x - enemy.pos.x) * enemy.speed;
+    enemy.vel.y = Math.sign(player.pos.y - enemy.pos.y) * enemy.speed;
+
+    enemy.pos.x += enemy.vel.x;
+    enemy.pos.y += enemy.vel.y;
 }
 
 canvas.addEventListener("click", (event) => {
@@ -143,10 +177,8 @@ function gameLoop(){
     for (let i = 0; i < enemies.length; i++) {
         let enemy = enemies[i];
 
-        enemy.pos.x += enemy.vel.x;
-        enemy.pos.y += enemy.vel.y;
-
         drawEnemy(enemy);
+        moveEnemy(enemy);
         
         for (let j = 0; j < bullets.length; j++) {
             let b = bullets[j];
@@ -177,14 +209,15 @@ function gameLoop(){
             }
         }
     }
-
     //remove all bullets from list with no repeats
     for (let i = 0; i < bulletsToDelete.length; i++) {
-        bullets.splice(bulletsToDelete[i] - bulletsRemoved);
+        bullets.splice(bulletsToDelete[i] - bulletsRemoved, 1);
+        bulletsRemoved++;
     }
     
     for (let i = 0; i < enemiesToDelete.length; i++){
-        enemies.splice(enemiesToDelete[i] - enemiesRemoved);
+        enemies.splice(enemiesToDelete[i] - enemiesRemoved, 1);
+        enemiesRemoved++;
     }
 }
 
@@ -196,6 +229,8 @@ document.getElementById("canvas").onmousewheel = function(event){
     event.preventDefault();
 };
 
-enemies.push(new Enemy(new Vector2(300, 300), new Vector2(0, 0), 5, 50));
+enemies.push(new Enemy(new Vector2(50, 300), new Vector2(0, 0), "speedster"));
+enemies.push(new Enemy(new Vector2(300, 300), new Vector2(0, 0), "ninja"));
+enemies.push(new Enemy(new Vector2(500, 300), new Vector2(0, 0), "tank"));
 
 setInterval(() => {gameLoop()}, 1); 
