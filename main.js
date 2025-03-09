@@ -154,6 +154,10 @@ function countSeconds(){
     }, 1000);
 }
 
+function gameOver(){
+    console.log("You Died");
+
+}
 
 function gameLoop(){
     
@@ -191,7 +195,6 @@ function gameLoop(){
 
         if(enemy.type === "ninja"){
             if(runtime - enemyTypes[enemy.type].cooldown >= enemy.previousRuntime){
-                console.log("dashed");
                 //cooldown over, use ability
                 let dX = player.pos.x - enemy.pos.x;
                 let dY = player.pos.y - enemy.pos.y;
@@ -205,10 +208,27 @@ function gameLoop(){
             }
         }
 
+        if(Math.abs(player.pos.x - enemy.pos.x) <= (player.width / 2) + (enemy.size / 2)){
+            if(Math.abs(player.pos.y - enemy.pos.y) <= (player.height / 2) + (enemy.size / 2)){
+                let dX = enemy.pos.x - player.pos.x;
+                let dY = enemy.pos.y - player.pos.y;
+
+                let dLength = Math.sqrt(dX ** 2 + dY ** 2);
+
+                newVel = new Vector2(dX / dLength, dY / dLength);
+
+                enemy.pos.x += newVel.x * 200;
+                enemy.pos.y += newVel.y * 200;
+
+                player.health -= enemy.damage;
+            }
+        }
+
+
         for (let j = 0; j < bullets.length; j++) {
             let b = bullets[j];
-            if(b.pos.x - (b.size / 2) <= enemy.pos.x + (enemy.size / 2) && b.pos.x + (b.size / 2) >= enemy.pos.x - (enemy.size / 2)){
-                if(b.pos.y - (b.size / 2) <= enemy.pos.y + (enemy.size / 2) && b.pos.y + (b.size / 2) >= enemy.pos.y - (enemy.size / 2)){
+            if(Math.abs(b.pos.x - enemy.pos.x) <= (b.size / 2) + (enemy.size / 2)){
+                if(Math.abs(b.pos.y - enemy.pos.y) <= (b.size / 2) + (enemy.size / 2)){
                     //bullet hit enemy
                     enemy.health -= b.damage;
                     bulletsToDelete.push(j);
@@ -243,6 +263,10 @@ function gameLoop(){
     for (let i = 0; i < enemiesToDelete.length; i++){
         enemies.splice(enemiesToDelete[i] - enemiesRemoved, 1);
         enemiesRemoved++;
+    }
+
+    if (player.health <= 0){
+        gameOver();
     }
 }
 
