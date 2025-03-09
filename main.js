@@ -21,7 +21,7 @@ const elementInfectionDuration = 5;
 const elementPlayerDuration = 10;
 
 let lastTimePowerupSpawned = 0;
-const powerupCooldown = 5;
+const powerupCooldown = 45;
 
 const Vector2 = class {
     constructor(x, y){
@@ -44,6 +44,13 @@ const enemyTypes = {
     "speedster": {speed: 1.7, health: 2, size: 40, cooldown: 0, damage: 1},
     "ninja": {speed: 1, health: 3, size: 50, cooldown: 3, damage: 2.5},
     "tank": {speed: .7, health: 5, size: 65, cooldown: 0, damage: 4}
+}
+
+const elementColors = {
+    "fire": "red",
+    "lightning": "yellow",
+    "ice": "blue",
+    "poison": "green"
 }
 
 const Enemy = class {
@@ -130,25 +137,18 @@ function drawEnemy(enemy){
     if(enemy.element != ""){
         if (enemy.element === "fire"){
             ctx.fillStyle = "rgb(255 0 0 / 50%)";
-            ctx.fillRect(enemy.pos.x - (enemy.size / 2), enemy.pos.y - (enemy.size / 2), enemy.size, enemy.size);
-            ctx.fillStyle = "rgb(255 0 0 / 100%)";
         }
         else if (enemy.element === "ice"){
             ctx.fillStyle = "rgb(0 0 255 / 50%)";
-            ctx.fillRect(enemy.pos.x - (enemy.size / 2), enemy.pos.y - (enemy.size / 2), enemy.size, enemy.size);
-            ctx.fillStyle = "rgb(0 0 255 / 100%)";
         }
         else if (enemy.element === "lightning"){
             ctx.fillStyle = "rgb(255 255 0 / 50%)";
-            ctx.fillRect(enemy.pos.x - (enemy.size / 2), enemy.pos.y - (enemy.size / 2), enemy.size, enemy.size);
-            ctx.fillStyle = "rgb(255 255 0 / 100%)";
         }
         else if (enemy.element === "poison"){
             ctx.fillStyle = "rgb(0 255 0 / 50%)";
-            ctx.fillRect(enemy.pos.x - (enemy.size / 2), enemy.pos.y - (enemy.size / 2), enemy.size, enemy.size);
-            ctx.fillStyle = "rgb(0 255 0 / 100%)";
         }
-        
+        ctx.fillRect(enemy.pos.x - (enemy.size / 2), enemy.pos.y - (enemy.size / 2), enemy.size, enemy.size);
+        ctx.fillStyle = "rgb(0 0 0 / 100%)";
     }
     
 }
@@ -228,20 +228,18 @@ function spawnPowerup(){
     let r = Math.random();
     if(r <= .25){
         element = "fire";
-        color = "red";
     }
     else if(r <= .50){
         element = "lightning";
-        color = "yellow";
     }
     else if(r <= .75){
         element = "ice";
-        color = "blue";
     }
     else{
         element = "poison";
-        color = "green";
     }
+
+    color = elementColors[element];
 
     return new Powerup(pos, element, color);
 }
@@ -267,6 +265,10 @@ function drawHUD(){
     }
     ctx.fillStyle = "black";
     ctx.fillText("/" + maxAmmo, offset, 50);
+
+    //draw element
+    ctx.fillStyle = elementColors[player.element];
+    ctx.fillRect(70 + offset, 10, 50, 50);
 }
 
 function gameLoop(){
