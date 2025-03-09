@@ -8,11 +8,16 @@ canvas.height = window.innerHeight;
 
 let bullets = [];
 let enemies = [];
+let powerups = [];
 let bulletSpeed = 10;
 const bulletLifespan = 3;
 
 let runtime = 0;
 
+const elementInfectionDuration = 5;
+
+let lastTimePowerupSpawned = 0;
+const powerupCooldown = 5;
 
 const Vector2 = class {
     constructor(x, y){
@@ -33,8 +38,8 @@ const Bullet = class {
 
 const enemyTypes = {
     "speedster": {speed: 1.7, health: 2, size: 40, cooldown: 0, damage: 1},
-    "ninja": {speed: 1, health: 3, size: 50, cooldown: 3, damage: 1},
-    "tank": {speed: .7, health: 5, size: 65, cooldown: 0, damage: 1}
+    "ninja": {speed: 1, health: 3, size: 50, cooldown: 3, damage: 2.5},
+    "tank": {speed: .7, health: 5, size: 65, cooldown: 0, damage: 4}
 }
 
 const Enemy = class {
@@ -49,6 +54,20 @@ const Enemy = class {
         //saves the last time the ability of the type was used
         //defaulted to time the enemy is first spawned + cooldown 
         this.previousRuntime = 0;
+        
+        this.element = "";
+        this.elementCooldown = 0;
+
+        this.elementDuration = 0;
+    }
+}
+
+const Powerup = class {
+    constructor(pos, element, color){
+        this.pos = pos;
+        this.element = element;
+        this.color = color;
+        this.size = 50;
     }
 }
 
@@ -58,7 +77,8 @@ let player = {
     width: 50,
     height: 50,
     moveSpeed: 2.5,
-    health: 10
+    health: 10,
+    element: ""
 }
 
 function movePlayer(){
@@ -85,7 +105,7 @@ function shoot(mousePos){
 function drawEnemy(enemy){
     if(enemy.type === "speedster"){
         //speedster
-        ctx.fillStyle = "#4381C1";
+        ctx.fillStyle = "#201E1F";
         ctx.fillRect(enemy.pos.x - (enemy.size / 2), enemy.pos.y - (enemy.size / 2), enemy.size, enemy.size);
     }
     else if(enemy.type === "ninja"){
@@ -97,8 +117,32 @@ function drawEnemy(enemy){
     }
     else{
         //tank
-        ctx.fillStyle = "#FF4000";
+        ctx.fillStyle = "#201E1F";
         ctx.fillRect(enemy.pos.x - (enemy.size / 2), enemy.pos.y - (enemy.size / 2), enemy.size, enemy.size);
+    }
+
+    if(enemy.element != ""){
+        if (enemy.element === "fire"){
+            ctx.fillStyle = "rgb(255 0 0 / 50%)";
+            ctx.fillRect(enemy.pos.x - (enemy.size / 2), enemy.pos.y - (enemy.size / 2), enemy.size, enemy.size);
+            ctx.fillStyle = "rgb(255 0 0 / 100%)";
+        }
+        else if (enemy.element === "ice"){
+            ctx.fillStyle = "rgb(0 0 255 / 50%)";
+            ctx.fillRect(enemy.pos.x - (enemy.size / 2), enemy.pos.y - (enemy.size / 2), enemy.size, enemy.size);
+            ctx.fillStyle = "rgb(0 0 255 / 100%)";
+        }
+        else if (enemy.element === "lightning"){
+            ctx.fillStyle = "rgb(255 255 0 / 50%)";
+            ctx.fillRect(enemy.pos.x - (enemy.size / 2), enemy.pos.y - (enemy.size / 2), enemy.size, enemy.size);
+            ctx.fillStyle = "rgb(255 255 0 / 100%)";
+        }
+        else if (enemy.element === "poison"){
+            ctx.fillStyle = "rgb(0 255 0 / 50%)";
+            ctx.fillRect(enemy.pos.x - (enemy.size / 2), enemy.pos.y - (enemy.size / 2), enemy.size, enemy.size);
+            ctx.fillStyle = "rgb(0 255 0 / 100%)";
+        }
+        
     }
     
 }
@@ -156,12 +200,36 @@ function countSeconds(){
 
 function gameOver(){
     console.log("You Died");
+}
 
+function spawnPowerup(){
+    const offset = 10; //powerups will spawn 10 px away from eery border
+
+    let pos = new Vector2(Math.random() * (canvas.width - offset) + offset, Math.random() * (canvas.height - offset) + offset);
+    let element = "";
+    let color = "";
+    let r = Math.random();
+    if(r <= .25){
+        element = "fire";
+        color = "red";
+    }
+    else if(r <= .50){
+        element = "lightning";
+        color = "yellow";
+    }
+    else if(r <= .75){
+        element = "ice";
+        color = "blue";
+    }
+    else{
+        element = "poison";
+        color = "green";
+    }
+
+    return new Powerup(pos, element, color);
 }
 
 function gameLoop(){
-    
-
     let bulletsToDelete = [];
     let enemiesToDelete = [];
 
@@ -190,10 +258,44 @@ function gameLoop(){
     for (let i = 0; i < enemies.length; i++) {
         let enemy = enemies[i];
 
-        drawEnemy(enemy);
-        moveEnemy(enemy);
+        //elemental debuffs
+        let damageDeduction = 1;
+        let damageOverTime = 0;
+        let stun = false;
+        let damageTakenMultiplier = 1;
 
-        if(enemy.type === "ninja"){
+        if(enemy.element === "lightning"){
+            //damage done to player is divided by 2
+            damageDeduction = 2;
+        }
+        else if(enemy.element === "fire"){
+            //.5 damage done to enemy every second
+            damageOverTime = .5;
+        }
+        else if(enemy.element === "ice"){
+            //enemy can no longer move
+            stun = true;
+        }
+        else if(enemy.element === "poison"){
+            //enemy can no longer move
+            damageTakenMultiplier = 2;
+        }
+
+        drawEnemy(enemy);
+        if(!stun){
+            moveEnemy(enemy);
+        }
+
+        if(enemy.elementCooldown != runtime){
+            enemy.health -= damageOverTime;
+            enemy.elementCooldown = runtime;
+        }
+        if(runtime > enemy.elementDuration){
+            enemy.element = "";
+            enemy.elementCooldown = runtime;
+        }
+
+        if(enemy.type === "ninja" && enemy.element !== "ice"){
             if(runtime - enemyTypes[enemy.type].cooldown >= enemy.previousRuntime){
                 //cooldown over, use ability
                 let dX = player.pos.x - enemy.pos.x;
@@ -220,7 +322,7 @@ function gameLoop(){
                 enemy.pos.x += newVel.x * 200;
                 enemy.pos.y += newVel.y * 200;
 
-                player.health -= enemy.damage;
+                player.health -= enemy.damage / damageDeduction;
             }
         }
 
@@ -230,15 +332,31 @@ function gameLoop(){
             if(Math.abs(b.pos.x - enemy.pos.x) <= (b.size / 2) + (enemy.size / 2)){
                 if(Math.abs(b.pos.y - enemy.pos.y) <= (b.size / 2) + (enemy.size / 2)){
                     //bullet hit enemy
-                    enemy.health -= b.damage;
+                    enemy.element = player.element;
+                    enemy.elementDuration = runtime + elementInfectionDuration;
+                    enemy.health -= b.damage * damageTakenMultiplier;
                     bulletsToDelete.push(j);
-                    if(enemy.health === 0){
-                        enemiesToDelete.push(i);
-                    }
                 }
             }
         }
+        if(enemy.health <= 0){
+            enemiesToDelete.push(i);
+        }
         
+    }
+
+    for (let i = 0; i < powerups.length; i++){
+        let powerup = powerups[i];
+
+        ctx.fillStyle = powerup.color;
+        ctx.fillRect(powerup.pos.x, powerup.pos.y, 50, 50);
+
+        if(Math.abs(powerup.pos.x - player.pos.x) <= (powerup.size / 2) + (player.width / 2)){
+            if(Math.abs(powerup.pos.y - player.pos.y) <= (powerup.size / 2) + (player.height / 2)){
+                powerups.splice(i, 1);
+                player.element = powerup.element;
+            }
+        }
     }
 
     let enemiesRemoved = 0;
@@ -265,6 +383,11 @@ function gameLoop(){
         enemiesRemoved++;
     }
 
+    if(runtime > lastTimePowerupSpawned + powerupCooldown){
+        powerups.push(spawnPowerup());
+        lastTimePowerupSpawned = runtime;
+    }
+
     if (player.health <= 0){
         gameOver();
     }
@@ -278,9 +401,9 @@ document.getElementById("canvas").onmousewheel = function(event){
     event.preventDefault();
 };
 
-//enemies.push(new Enemy(new Vector2(50, 300), new Vector2(0, 0), "speedster"));
-//enemies.push(new Enemy(new Vector2(300, 300), new Vector2(0, 0), "ninja"));
-//enemies.push(new Enemy(new Vector2(500, 300), new Vector2(0, 0), "tank"));
+enemies.push(new Enemy(new Vector2(50, 300), new Vector2(0, 0), "speedster"));
+enemies.push(new Enemy(new Vector2(300, 300), new Vector2(0, 0), "ninja"));
+enemies.push(new Enemy(new Vector2(500, 300), new Vector2(0, 0), "tank"));
 
 countSeconds();
 setInterval(() => {gameLoop()}); 
