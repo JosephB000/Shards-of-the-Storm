@@ -6,13 +6,13 @@ const ctx = canvas.getContext("2d");
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
-let runtime = 0;
-let runtimeMillis = 0;
-
 let bullets = [];
 let enemies = [];
 let bulletSpeed = 10;
 const bulletLifespan = 3;
+
+let runtime = 0;
+
 
 const Vector2 = class {
     constructor(x, y){
@@ -32,9 +32,9 @@ const Bullet = class {
 }
 
 const enemyTypes = {
-    "speedster": {speed: 1.7, health: 2, size: 40},
-    "ninja": {speed: 1, health: 3, size: 50},
-    "tank": {speed: .7, health: 5, size: 65}
+    "speedster": {speed: 1.7, health: 2, size: 40, cooldown: 0, damage: 1},
+    "ninja": {speed: 1, health: 3, size: 50, cooldown: 3, damage: 1},
+    "tank": {speed: .7, health: 5, size: 65, cooldown: 0, damage: 1}
 }
 
 const Enemy = class {
@@ -44,7 +44,11 @@ const Enemy = class {
         this.type = type;
         this.health = enemyTypes[type].health;
         this.size = enemyTypes[type].size;
-        this.speed = enemyTypes[type].speed
+        this.speed = enemyTypes[type].speed;
+        this.damage = enemyTypes[type].damage;
+        //saves the last time the ability of the type was used
+        //defaulted to time the enemy is first spawned + cooldown 
+        this.previousRuntime = 0;
     }
 }
 
@@ -142,15 +146,20 @@ document.addEventListener("keyup", (event) => {
     }
 })
 
+function countSeconds(){
+    let timeoutId = setTimeout(() => {
+        runtime++;
+        clearTimeout(timeoutId);
+        countSeconds();
+    }, 1000);
+}
+
+
 function gameLoop(){
+    
+
     let bulletsToDelete = [];
     let enemiesToDelete = [];
-
-    runtimeMillis++;
-    if(runtimeMillis === 1000){
-        runtime++;
-        runtimeMillis = 0;
-    }
 
     movePlayer();
     
@@ -179,7 +188,23 @@ function gameLoop(){
 
         drawEnemy(enemy);
         moveEnemy(enemy);
-        
+
+        if(enemy.type === "ninja"){
+            if(runtime - enemyTypes[enemy.type].cooldown >= enemy.previousRuntime){
+                console.log("dashed");
+                //cooldown over, use ability
+                let dX = player.pos.x - enemy.pos.x;
+                let dY = player.pos.y - enemy.pos.y;
+                let dLength = Math.sqrt(dX ** 2 + dY ** 2);
+
+                newVel = new Vector2(dX / dLength, dY / dLength);
+                enemy.pos.x += newVel.x * 100;
+                enemy.pos.y += newVel.y * 100;
+                enemy.previousRuntime = runtime;
+                
+            }
+        }
+
         for (let j = 0; j < bullets.length; j++) {
             let b = bullets[j];
             if(b.pos.x - (b.size / 2) <= enemy.pos.x + (enemy.size / 2) && b.pos.x + (b.size / 2) >= enemy.pos.x - (enemy.size / 2)){
@@ -233,4 +258,5 @@ enemies.push(new Enemy(new Vector2(50, 300), new Vector2(0, 0), "speedster"));
 enemies.push(new Enemy(new Vector2(300, 300), new Vector2(0, 0), "ninja"));
 enemies.push(new Enemy(new Vector2(500, 300), new Vector2(0, 0), "tank"));
 
-setInterval(() => {gameLoop()}, 1); 
+countSeconds();
+setInterval(() => {gameLoop()}); 
