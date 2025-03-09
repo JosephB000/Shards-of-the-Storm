@@ -1,5 +1,3 @@
-// color palette: https://coolors.co/201e1f-ff4000-4381c1-feefdd-50b2c0
-
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
 
@@ -11,6 +9,11 @@ let enemies = [];
 let powerups = [];
 let bulletSpeed = 10;
 const bulletLifespan = 3;
+
+const maxAmmo = 20;
+const reloadTime = 2;
+let timeSinceReload = 0;
+let reloaded = true;
 
 let runtime = 0;
 
@@ -80,7 +83,8 @@ let player = {
     moveSpeed: 2.5,
     health: 10,
     element: "",
-    lastCollectedElement: 0
+    lastCollectedElement: 0,
+    ammo: maxAmmo
 }
 
 function movePlayer(){
@@ -158,7 +162,11 @@ function moveEnemy(enemy){
 }
 
 canvas.addEventListener("click", (event) => {
-    shoot(new Vector2(event.pageX, event.pageY));
+    if(player.ammo > 0){
+        shoot(new Vector2(event.pageX, event.pageY));
+        player.ammo--;
+    }
+    
 })
 
 document.addEventListener("keydown", (event) => {
@@ -173,6 +181,13 @@ document.addEventListener("keydown", (event) => {
     }
     else if(event.key == "d"){
         player.vel.x = player.moveSpeed;
+    }
+    else if(event.key == "r"){
+        //reload
+        if(player.ammo !== maxAmmo && reloaded){
+            reloaded = false;
+            timeSinceReload = runtime;
+        }
     }
 
 })
@@ -201,7 +216,7 @@ function countSeconds(){
 }
 
 function gameOver(){
-    console.log("You Died");
+    //you died bruh
 }
 
 function spawnPowerup(){
@@ -231,6 +246,29 @@ function spawnPowerup(){
     return new Powerup(pos, element, color);
 }
 
+function drawHUD(){
+    //draw ammo
+    let offset = 40;
+    if (player.ammo > 0){
+        ctx.fillStyle = "black";
+        if(player.ammo >= 10){
+            offset = 60;
+        }
+    }
+    else{
+        ctx.fillStyle = "red";
+    }
+    ctx.font = "48px serif";
+    if(reloaded){
+        ctx.fillText(player.ammo, 10, 50);
+    }
+    else{
+        ctx.fillText("--", 10, 50);
+    }
+    ctx.fillStyle = "black";
+    ctx.fillText("/" + maxAmmo, offset, 50);
+}
+
 function gameLoop(){
     let bulletsToDelete = [];
     let enemiesToDelete = [];
@@ -240,6 +278,12 @@ function gameLoop(){
     
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+    //reload after reload time
+    if(!reloaded && runtime > timeSinceReload + reloadTime){
+        player.ammo = maxAmmo;
+        reloaded = true;
+    }
+    
     for (let i = 0; i < bullets.length; i++) {
         let b = bullets[i];
         
@@ -406,6 +450,8 @@ function gameLoop(){
     if (player.health <= 0){
         gameOver();
     }
+
+    drawHUD();
 }
 
 document.getElementById("canvas").onwheel = function(event){
