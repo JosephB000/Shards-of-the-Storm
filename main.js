@@ -53,7 +53,7 @@ const Enemy = class {
 }
 
 let player = {
-    pos: new Vector2(100, 100),
+    pos: new Vector2(canvas.width / 2, canvas.height / 2),
     vel: new Vector2(0, 0),
     width: 50,
     height: 50,
@@ -278,9 +278,9 @@ document.getElementById("canvas").onmousewheel = function(event){
     event.preventDefault();
 };
 
-enemies.push(new Enemy(new Vector2(50, 300), new Vector2(0, 0), "speedster"));
-enemies.push(new Enemy(new Vector2(300, 300), new Vector2(0, 0), "ninja"));
-enemies.push(new Enemy(new Vector2(500, 300), new Vector2(0, 0), "tank"));
+//enemies.push(new Enemy(new Vector2(50, 300), new Vector2(0, 0), "speedster"));
+//enemies.push(new Enemy(new Vector2(300, 300), new Vector2(0, 0), "ninja"));
+//enemies.push(new Enemy(new Vector2(500, 300), new Vector2(0, 0), "tank"));
 
 countSeconds();
 setInterval(() => {gameLoop()}); 
