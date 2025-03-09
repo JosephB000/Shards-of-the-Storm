@@ -277,7 +277,7 @@ function gameLoop(){
             stun = true;
         }
         else if(enemy.element === "poison"){
-            //enemy can no longer move
+            //increases damage taken by 2x
             damageTakenMultiplier = 2;
         }
 
