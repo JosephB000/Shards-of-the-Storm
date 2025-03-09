@@ -15,6 +15,7 @@ const bulletLifespan = 3;
 let runtime = 0;
 
 const elementInfectionDuration = 5;
+const elementPlayerDuration = 10;
 
 let lastTimePowerupSpawned = 0;
 const powerupCooldown = 5;
@@ -78,7 +79,8 @@ let player = {
     height: 50,
     moveSpeed: 2.5,
     health: 10,
-    element: ""
+    element: "",
+    lastCollectedElement: 0
 }
 
 function movePlayer(){
@@ -232,6 +234,7 @@ function spawnPowerup(){
 function gameLoop(){
     let bulletsToDelete = [];
     let enemiesToDelete = [];
+    let powerupsToDelete = [];
 
     movePlayer();
     
@@ -353,16 +356,23 @@ function gameLoop(){
 
         if(Math.abs(powerup.pos.x - player.pos.x) <= (powerup.size / 2) + (player.width / 2)){
             if(Math.abs(powerup.pos.y - player.pos.y) <= (powerup.size / 2) + (player.height / 2)){
-                powerups.splice(i, 1);
+                powerupsToDelete.push(i);
                 player.element = powerup.element;
+                player.lastCollectedElement = runtime;
             }
         }
     }
 
+    if(runtime > player.lastCollectedElement + elementPlayerDuration){
+        player.element = "";
+    }
+
     let enemiesRemoved = 0;
     let bulletsRemoved = 0;
+    let powerupsRemoved = 0;
     bulletsToDelete.sort();
     enemiesToDelete.sort();
+    powerupsToDelete.sort();
     //remove bullets needing to be removed from array 
     for (let i = 0; i < bulletsToDelete.length; i++) {
         //since there are 2 instances where bullets can be deleted, check for repeats
@@ -381,6 +391,11 @@ function gameLoop(){
     for (let i = 0; i < enemiesToDelete.length; i++){
         enemies.splice(enemiesToDelete[i] - enemiesRemoved, 1);
         enemiesRemoved++;
+    }
+
+    for (let i = 0; i < powerupsToDelete.length; i++){
+        powerups.splice(powerupsToDelete[i] - powerupsRemoved, 1);
+        powerupsRemoved++;
     }
 
     if(runtime > lastTimePowerupSpawned + powerupCooldown){
