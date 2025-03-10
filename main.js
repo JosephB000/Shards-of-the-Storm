@@ -10,12 +10,16 @@ let powerups = [];
 let bulletSpeed = 10;
 const bulletLifespan = 3;
 
-const maxAmmo = 20;
-const reloadTime = 2;
+const maxAmmo = 30;
+const reloadTime = 1.5;
 let timeSinceReload = 0;
 let reloaded = true;
 
 let runtime = 0;
+
+let wave = 1;
+let lastSpawnedEnemy = 0;
+let enemiesSpawned = {speedster: 0, ninja: 0, tank: 0};
 
 const elementInfectionDuration = 5;
 const elementPlayerDuration = 10;
@@ -41,7 +45,7 @@ const Bullet = class {
 }
 
 const enemyTypes = {
-    "speedster": {speed: 1.7, health: 2, size: 40, cooldown: 0, damage: 1},
+    "speedster": {speed: 1.3, health: 2, size: 40, cooldown: 0, damage: 1},
     "ninja": {speed: 1, health: 3, size: 50, cooldown: 3, damage: 2.5},
     "tank": {speed: .7, health: 5, size: 65, cooldown: 0, damage: 4}
 }
@@ -162,7 +166,7 @@ function moveEnemy(enemy){
 }
 
 canvas.addEventListener("click", (event) => {
-    if(player.ammo > 0){
+    if(player.ammo > 0 && reloaded){
         shoot(new Vector2(event.pageX, event.pageY));
         player.ammo--;
     }
@@ -216,11 +220,54 @@ function countSeconds(){
 }
 
 function gameOver(){
-    //you died bruh
+    //location.reload()
+}
+
+function spawnEnemy(speedstersToSpawn, ninjasToSpawn, tanksToSpawn){
+    let offset = 10;
+    
+    let randPos;
+    //determines if they should spawn any where on the left/right or anywhere on the top/bottom
+    let j = Math.random();
+    if(j <= .5){
+        randPos = new Vector2(Math.round(Math.random()) * canvas.width, Math.random() * canvas.height);
+    }
+    else{
+        randPos = new Vector2(Math.random() * canvas.width, Math.round(Math.random()) * canvas.height);
+    }
+
+    //console.log(randPos);
+
+    if(lastSpawnedEnemy !== runtime){
+        if(enemiesSpawned.speedster !== speedstersToSpawn){
+            //spawn speedster
+            enemies.push(new Enemy(randPos, new Vector2(0, 0), "speedster"));
+            enemiesSpawned.speedster++;
+        }
+        else if(enemiesSpawned.ninja !== ninjasToSpawn){
+            //spawn ninja
+            enemies.push(new Enemy(randPos, new Vector2(0, 0), "ninja"));
+            enemiesSpawned.ninja++;
+        }
+        else if(enemiesSpawned.tank !== tanksToSpawn){
+            //spawn tank
+            enemies.push(new Enemy(randPos, new Vector2(0, 0), "tank"));
+            enemiesSpawned.tank++;
+        }
+        lastSpawnedEnemy = runtime;
+    }
+}
+
+function waveComplete(speedstersToSpawn, ninjasToSpawn, tanksToSpawn){
+    if(enemiesSpawned.speedster === speedstersToSpawn && enemiesSpawned.ninja === ninjasToSpawn && enemiesSpawned.tank === tanksToSpawn){
+        return true;
+    }
+    return false;
+    
 }
 
 function spawnPowerup(){
-    const offset = 10; //powerups will spawn 10 px away from eery border
+    const offset = 10; //powerups will spawn 10 px away from every border
 
     let pos = new Vector2(Math.random() * (canvas.width - offset) + offset, Math.random() * (canvas.height - offset) + offset);
     let element = "";
@@ -449,6 +496,29 @@ function gameLoop(){
         lastTimePowerupSpawned = runtime;
     }
 
+    let speedstersToSpawn = wave * 3;
+    let ninjasToSpawn = (wave - 8) * (5);
+    let tanksToSpawn = (wave - 13) * (5);
+
+    if(ninjasToSpawn < 0){
+        ninjasToSpawn = 0;
+    }
+    if(tanksToSpawn < 0){
+        tanksToSpawn = 0;
+    }
+
+    console.log(wave);
+
+    if(!waveComplete(speedstersToSpawn, ninjasToSpawn, tanksToSpawn)){
+        spawnEnemy(speedstersToSpawn, ninjasToSpawn, tanksToSpawn);
+    }
+    else if(enemies.length === 0){
+        wave++;
+        enemiesSpawned.speedster = 0;
+        enemiesSpawned.ninja = 0;
+        enemiesSpawned.tank = 0;
+    }
+
     if (player.health <= 0){
         gameOver();
     }
@@ -463,10 +533,6 @@ document.getElementById("canvas").onwheel = function(event){
 document.getElementById("canvas").onmousewheel = function(event){
     event.preventDefault();
 };
-
-enemies.push(new Enemy(new Vector2(50, 300), new Vector2(0, 0), "speedster"));
-enemies.push(new Enemy(new Vector2(300, 300), new Vector2(0, 0), "ninja"));
-enemies.push(new Enemy(new Vector2(500, 300), new Vector2(0, 0), "tank"));
 
 countSeconds();
 setInterval(() => {gameLoop()}); 
