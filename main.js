@@ -10,6 +10,8 @@ let powerups = [];
 let bulletSpeed = 10;
 const bulletLifespan = 3;
 
+const maxHealth = 10;
+
 const maxAmmo = 30;
 const reloadTime = 1.5;
 let timeSinceReload = 0;
@@ -92,7 +94,7 @@ let player = {
     width: 50,
     height: 50,
     moveSpeed: 2.5,
-    health: 10,
+    health: maxHealth,
     element: "",
     lastCollectedElement: 0,
     ammo: maxAmmo
@@ -316,6 +318,14 @@ function drawHUD(){
     //draw element
     ctx.fillStyle = elementColors[player.element];
     ctx.fillRect(70 + offset, 10, 50, 50);
+
+    //draw health
+    ctx.fillStyle = "black";
+    ctx.fillText(player.health + "/" + maxHealth + " Health", 10, 100);
+
+    //draw health
+    ctx.fillStyle = "black";
+    ctx.fillText("Wave: " + wave, canvas.width / 2, 50);
 }
 
 function gameLoop(){
