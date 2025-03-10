@@ -10,6 +10,8 @@ let powerups = [];
 let bulletSpeed = 10;
 const bulletLifespan = 3;
 
+const maxHealth = 10;
+
 const maxAmmo = 30;
 const reloadTime = 1.5;
 let timeSinceReload = 0;
@@ -45,9 +47,9 @@ const Bullet = class {
 }
 
 const enemyTypes = {
-    "speedster": {speed: 1.3, health: 2, size: 40, cooldown: 0, damage: 1},
-    "ninja": {speed: 1, health: 3, size: 50, cooldown: 3, damage: 2.5},
-    "tank": {speed: .7, health: 5, size: 65, cooldown: 0, damage: 4}
+    "speedster": {speed: 1.3, health: 1, size: 40, cooldown: 0, damage: 1},
+    "ninja": {speed: 1, health: 2, size: 50, cooldown: 3, damage: 2.5},
+    "tank": {speed: .7, health: 4, size: 65, cooldown: 0, damage: 4}
 }
 
 const elementColors = {
@@ -92,7 +94,7 @@ let player = {
     width: 50,
     height: 50,
     moveSpeed: 2.5,
-    health: 10,
+    health: maxHealth,
     element: "",
     lastCollectedElement: 0,
     ammo: maxAmmo
@@ -328,6 +330,14 @@ function drawHUD(){
     //draw element
     ctx.fillStyle = elementColors[player.element];
     ctx.fillRect(70 + offset, 10, 50, 50);
+
+    //draw health
+    ctx.fillStyle = "black";
+    ctx.fillText(player.health + "/" + maxHealth + " Health", 10, 100);
+
+    //draw health
+    ctx.fillStyle = "black";
+    ctx.fillText("Wave: " + wave, canvas.width / 2, 50);
 }
 
 function gameLoop(){
