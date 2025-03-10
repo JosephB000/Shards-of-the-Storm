@@ -277,6 +277,7 @@ function waveComplete(speedstersToSpawn, ninjasToSpawn, tanksToSpawn){
 function spawnBoss(boss){
     if (wave % 5 === 0){
         spawnEnemy(boss)
+        // sigma 
     }
 }
 
