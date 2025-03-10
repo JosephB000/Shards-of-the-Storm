@@ -29,6 +29,12 @@ const elementPlayerDuration = 10;
 let lastTimePowerupSpawned = 0;
 const powerupCooldown = 45;
 
+const sprites = {
+    ninja: new Image()
+}
+
+sprites.ninja.src = "sprites/ninja.png";
+
 const Vector2 = class {
     constructor(x, y){
         this.x = x;
@@ -129,13 +135,10 @@ function drawEnemy(enemy){
     }
     else if(enemy.type === "ninja"){
         //ninja
-        ctx.fillStyle = "#201E1F";
-        ctx.fillRect(enemy.pos.x - (enemy.size / 2), enemy.pos.y - (enemy.size / 2), enemy.size, enemy.size);
-        ctx.fillStyle = "#FEEFDD";
-        ctx.fillRect(enemy.pos.x - (enemy.size / 2) * .8, enemy.pos.y - (enemy.size / 2) * .8, enemy.size*0.8, enemy.size*.4);
+        ctx.drawImage(sprites.ninja, enemy.pos.x - (enemy.size / 2), enemy.pos.y - (enemy.size / 2));
     }
     else if(enemy.type === "gabe"){
-           //gabe the nigger
+           //Gabe The Sloth
            ctx.fillStyle = "#FF0000";
            ctx.fillRect(enemy.pos.x - (enemy.size / 2), enemy.pos.y - (enemy.size / 2), enemy.size, enemy.size);
            ctx.fillStyle = "#FF0000";
@@ -250,7 +253,7 @@ function spawnEnemy(speedstersToSpawn, ninjasToSpawn, tanksToSpawn){
     if(lastSpawnedEnemy !== runtime){
         if(enemiesSpawned.speedster !== speedstersToSpawn){
             //spawn speedster
-            enemies.push(new Enemy(randPos, new Vector2(0, 0), "speedster"));
+            enemies.push(new Enemy(randPos, new Vector2(0, 0), "ninja"));
             enemiesSpawned.speedster++;
         }
         else if(enemiesSpawned.ninja !== ninjasToSpawn){
@@ -531,23 +534,23 @@ function gameLoop(){
         tanksToSpawn = 0;
     }
 
-    console.log(wave);
+    if (!bossTesting){
+        if(!waveComplete(speedstersToSpawn, ninjasToSpawn, tanksToSpawn)){
+            spawnEnemy(speedstersToSpawn, ninjasToSpawn, tanksToSpawn);
+        }
+        else if(enemies.length === 0){
+            wave++;
+            enemiesSpawned.speedster = 0;
+            enemiesSpawned.ninja = 0;
+            enemiesSpawned.tank = 0;
+        }
 
-    if(!waveComplete(speedstersToSpawn, ninjasToSpawn, tanksToSpawn)){
-        spawnEnemy(speedstersToSpawn, ninjasToSpawn, tanksToSpawn);
-        if (bossTesting){
-            spawnBoss("gabe")
+        if (player.health <= 0){
+            gameOver();
         }
     }
-    else if(enemies.length === 0){
-        wave++;
-        enemiesSpawned.speedster = 0;
-        enemiesSpawned.ninja = 0;
-        enemiesSpawned.tank = 0;
-    }
-
-    if (player.health <= 0){
-        gameOver();
+    else{
+        spawnBoss("gabe");
     }
 
     drawHUD();
