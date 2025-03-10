@@ -47,9 +47,9 @@ const Bullet = class {
 }
 
 const enemyTypes = {
-    "speedster": {speed: 1.3, health: 2, size: 40, cooldown: 0, damage: 1},
-    "ninja": {speed: 1, health: 3, size: 50, cooldown: 3, damage: 2.5},
-    "tank": {speed: .7, health: 5, size: 65, cooldown: 0, damage: 4}
+    "speedster": {speed: 1.3, health: 1, size: 40, cooldown: 0, damage: 1},
+    "ninja": {speed: 1, health: 2, size: 50, cooldown: 3, damage: 2.5},
+    "tank": {speed: .7, health: 4, size: 65, cooldown: 0, damage: 4}
 }
 
 const elementColors = {
