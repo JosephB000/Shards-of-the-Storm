@@ -132,6 +132,13 @@ function drawEnemy(enemy){
         ctx.fillStyle = "#FEEFDD";
         ctx.fillRect(enemy.pos.x - (enemy.size / 2) * .8, enemy.pos.y - (enemy.size / 2) * .8, enemy.size*0.8, enemy.size*.4);
     }
+    else if(enemy.type === "gabe"){
+           //gabe the nigger
+           ctx.fillStyle = "#FF0000";
+           ctx.fillRect(enemy.pos.x - (enemy.size / 2), enemy.pos.y - (enemy.size / 2), enemy.size, enemy.size);
+           ctx.fillStyle = "#FF0000";
+           ctx.fillRect(enemy.pos.x - (enemy.size / 2) * .8, enemy.pos.y - (enemy.size / 2) * .8, enemy.size*0.8, enemy.size*.4);
+    }
     else{
         //tank
         ctx.fillStyle = "#201E1F";
@@ -263,7 +270,12 @@ function waveComplete(speedstersToSpawn, ninjasToSpawn, tanksToSpawn){
         return true;
     }
     return false;
-    
+}
+
+function spawnBoss(boss){
+    if (wave % 5 === 0){
+        spawnEnemy(boss)
+    }
 }
 
 function spawnPowerup(){
@@ -322,6 +334,7 @@ function gameLoop(){
     let bulletsToDelete = [];
     let enemiesToDelete = [];
     let powerupsToDelete = [];
+    let bossTesting = false
 
     movePlayer();
     
@@ -511,6 +524,9 @@ function gameLoop(){
 
     if(!waveComplete(speedstersToSpawn, ninjasToSpawn, tanksToSpawn)){
         spawnEnemy(speedstersToSpawn, ninjasToSpawn, tanksToSpawn);
+        if (bossTesting){
+            spawnBoss("gabe")
+        }
     }
     else if(enemies.length === 0){
         wave++;
