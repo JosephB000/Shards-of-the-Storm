@@ -253,7 +253,7 @@ function spawnEnemy(speedstersToSpawn, ninjasToSpawn, tanksToSpawn){
     if(lastSpawnedEnemy !== runtime){
         if(enemiesSpawned.speedster !== speedstersToSpawn){
             //spawn speedster
-            enemies.push(new Enemy(randPos, new Vector2(0, 0), "ninja"));
+            enemies.push(new Enemy(randPos, new Vector2(0, 0), "speedster"));
             enemiesSpawned.speedster++;
         }
         else if(enemiesSpawned.ninja !== ninjasToSpawn){
