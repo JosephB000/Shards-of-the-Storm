@@ -7,8 +7,6 @@ canvas.height = window.innerHeight;
 let bullets = [];
 let enemies = [];
 let powerups = [];
-let bulletSpeed = 10;
-const bulletLifespan = 3;
 
 const maxHealth = 10;
 
@@ -32,31 +30,7 @@ const powerupCooldown = 30;
 const waveToSpawnNinja = 5;
 const waveToSpawnTank = 9;
 
-const sprites = {
-    player: new Image(),
-    ninja: new Image(),
-    poison: new Image()
-}
-sprites.ninja.src = "sprites/ninja.png";
-sprites.player.src = "sprites/maincharacter.png";
-sprites.poison.src = "sprites/poison.png";
-
-const Vector2 = class {
-    constructor(x, y){
-        this.x = x;
-        this.y = y;
-    }
-}
-
-const Bullet = class {
-    constructor(pos, vel, size, damage){
-        this.pos = pos;
-        this.vel = vel;
-        this.size = size;
-        this.damage = damage;
-        this.timeAlive = runtime;
-    }
-}
+let gameOverState = false;
 
 const enemyTypes = {
     "speedster": {speed: 1.3, health: 1, size: 40, cooldown: 0, damage: 1},
@@ -71,15 +45,40 @@ const elementColors = {
     "poison": "green"
 }
 
+const Vector2 = class {
+    constructor(x, y){
+        this.x = x;
+        this.y = y;
+    }
+
+    Normalize(){
+        let z = Math.sqrt(this.x ** 2 + this.y ** 2);
+
+        return new Vector2(this.x / z, this.y / z);
+    }
+}
+
+const Bullet = class {
+    constructor(pos, vel, size, damage){
+        this.pos = pos;
+        this.vel = vel;
+        this.size = size;
+        this.damage = damage;
+        this.speed = 10;
+        this.lifespan = 3;
+        this.timeAlive = runtime;
+    }
+}
+
 const Enemy = class {
     constructor(pos, vel, type){
         this.pos = pos;
         this.vel = vel;
         this.type = type;
-        this.health = enemyTypes[type].health;
-        this.size = enemyTypes[type].size;
-        this.speed = enemyTypes[type].speed;
-        this.damage = enemyTypes[type].damage;
+        this.health = enemyTypes[this.type].health;
+        this.size = enemyTypes[this.type].size;
+        this.speed = enemyTypes[this.type].speed;
+        this.damage = enemyTypes[this.type].damage;
         //saves the last time the ability of the type was used
         //defaulted to time the enemy is first spawned + cooldown 
         this.previousRuntime = 0;
@@ -88,6 +87,39 @@ const Enemy = class {
         this.elementCooldown = 0;
 
         this.elementDuration = 0;
+    }
+
+    draw(){
+        let sprite = new Image();
+        sprite.src = "sprites/enemies/" + this.type + ".png";
+
+        ctx.drawImage(sprite, this.pos.x - (this.size / 2), this.pos.y - (this.size / 2));
+    
+        if(this.element !== ""){
+            if (this.element === "fire"){
+                ctx.fillStyle = "rgb(255 0 0 / 50%)";
+            }
+            else if (this.element === "ice"){
+                ctx.fillStyle = "rgb(0 0 255 / 50%)";
+            }
+            else if (this.element === "lightning"){
+                ctx.fillStyle = "rgb(255 255 0 / 50%)";
+            }
+            else if (this.element === "poison"){
+                ctx.fillStyle = "rgb(0 255 0 / 50%)";
+            }
+            ctx.fillRect(this.pos.x - (this.size / 2), this.pos.y - (this.size / 2), this.size, this.size);
+            ctx.fillStyle = "rgb(0 0 0 / 100%)";
+        }
+        
+    }
+
+    move(){
+        this.vel.x = Math.sign(player.pos.x - this.pos.x) * this.speed;
+        this.vel.y = Math.sign(player.pos.y - this.pos.y) * this.speed;
+
+        this.pos.x += this.vel.x;
+        this.pos.y += this.vel.y;
     }
 }
 
@@ -98,94 +130,63 @@ const Powerup = class {
         this.color = color;
         this.size = 50;
     }
-}
 
-let player = {
-    pos: new Vector2(canvas.width / 2, canvas.height / 2),
-    vel: new Vector2(0, 0),
-    width: 50,
-    height: 50,
-    moveSpeed: 2.5,
-    health: maxHealth,
-    element: "",
-    lastCollectedElement: 0,
-    ammo: maxAmmo
-}
+    draw(){
+        
 
-function movePlayer(){
-    if((player.pos.x + (player.width / 2)) + player.vel.x <= canvas.width && (player.pos.x - (player.width / 2)) + player.vel.x >= 0){
-        player.pos.x += player.vel.x;
-    }
-    if((player.pos.y + (player.height / 2)) + player.vel.y <= canvas.height && (player.pos.y - (player.height / 2)) + player.vel.y >= 0){
-        player.pos.y += player.vel.y;
-    }
-}
-
-function shoot(mousePos){
-    let dX = mousePos.x - player.pos.x;
-    let dY = mousePos.y - player.pos.y;
-
-    let dLength = Math.sqrt(dX ** 2 + dY ** 2);
-
-    let damage = 1
-    newVel = new Vector2(dX / dLength, dY / dLength);
-    newBullet = new Bullet(new Vector2(player.pos.x, player.pos.y), newVel, 10, damage);
-    bullets.push(newBullet);
-}
-
-function drawEnemy(enemy){
-    if(enemy.type === "speedster"){
-        //speedster
-        ctx.fillStyle = "#201E1F";
-        ctx.fillRect(enemy.pos.x - (enemy.size / 2), enemy.pos.y - (enemy.size / 2), enemy.size, enemy.size);
-    }
-    else if(enemy.type === "ninja"){
-        //ninja
-        ctx.drawImage(sprites.ninja, enemy.pos.x - (enemy.size / 2), enemy.pos.y - (enemy.size / 2));
-    }
-    else if(enemy.type === "gabe"){
-           //Gabe The Sloth
-           ctx.fillStyle = "#FF0000";
-           ctx.fillRect(enemy.pos.x - (enemy.size / 2), enemy.pos.y - (enemy.size / 2), enemy.size, enemy.size);
-           ctx.fillStyle = "#FF0000";
-           ctx.fillRect(enemy.pos.x - (enemy.size / 2) * .8, enemy.pos.y - (enemy.size / 2) * .8, enemy.size*0.8, enemy.size*.4);
-    }
-    else{
-        //tank
-        ctx.fillStyle = "#201E1F";
-        ctx.fillRect(enemy.pos.x - (enemy.size / 2), enemy.pos.y - (enemy.size / 2), enemy.size, enemy.size);
-    }
-
-    if(enemy.element != ""){
-        if (enemy.element === "fire"){
-            ctx.fillStyle = "rgb(255 0 0 / 50%)";
+        if(this.element === "poison" || this.element === "fire"){
+            let sprite = new Image();
+            sprite.src = "sprites/powerups/" + this.element + ".png";
+            ctx.drawImage(sprite, this.pos.x, this.pos.y);
         }
-        else if (enemy.element === "ice"){
-            ctx.fillStyle = "rgb(0 0 255 / 50%)";
+        else{
+            ctx.fillStyle = this.color;
+            ctx.fillRect(this.pos.x, this.pos.y, 50, 50);
         }
-        else if (enemy.element === "lightning"){
-            ctx.fillStyle = "rgb(255 255 0 / 50%)";
-        }
-        else if (enemy.element === "poison"){
-            ctx.fillStyle = "rgb(0 255 0 / 50%)";
-        }
-        ctx.fillRect(enemy.pos.x - (enemy.size / 2), enemy.pos.y - (enemy.size / 2), enemy.size, enemy.size);
-        ctx.fillStyle = "rgb(0 0 0 / 100%)";
     }
-    
 }
 
-function moveEnemy(enemy){
-    enemy.vel.x = Math.sign(player.pos.x - enemy.pos.x) * enemy.speed;
-    enemy.vel.y = Math.sign(player.pos.y - enemy.pos.y) * enemy.speed;
+const Player = class{
+    constructor(){
+        this.pos = new Vector2(canvas.width / 2, canvas.height / 2);
+        this.vel = new Vector2(0, 0);
+        this.size = 50;
+        this.moveSpeed = 2.5;
+        this.health = maxHealth;
+        this.element = "";
+        this.lastCollectedElement = 0;
+        this.ammo = maxAmmo;
+        this.damage = 1;
+    }
 
-    enemy.pos.x += enemy.vel.x;
-    enemy.pos.y += enemy.vel.y;
+    move(){
+        if((this.pos.x + (this.size / 2)) + this.vel.x <= canvas.width && (this.pos.x - (this.size / 2)) + this.vel.x >= 0){
+            this.pos.x += this.vel.x;
+        }
+        if((this.pos.y + (this.size / 2)) + this.vel.y <= canvas.height && (this.pos.y - (this.size / 2)) + this.vel.y >= 0){
+            this.pos.y += this.vel.y;
+        }
+    }
+
+    draw(){
+        let sprite = new Image();
+        sprite.src = "sprites/maincharacter.png";
+
+        ctx.drawImage(sprite, this.pos.x - (this.size / 2), this.pos.y - (this.size / 2));
+    }
+
+    shoot(mousePos){
+        let d = new Vector2(mousePos.x - this.pos.x, mousePos.y - this.pos.y);
+        let newVel = d.Normalize();
+        let newBullet = new Bullet(new Vector2(this.pos.x, this.pos.y), newVel, 10, this.damage);
+        bullets.push(newBullet);
+    }
 }
 
 canvas.addEventListener("click", (event) => {
     if(player.ammo > 0 && reloaded){
-        shoot(new Vector2(event.pageX, event.pageY));
+        let mousePos = new Vector2(event.pageX, event.pageY);
+        player.shoot(mousePos);
         player.ammo--;
     }
     
@@ -238,16 +239,12 @@ function countSeconds(){
 }
 
 function gameOver(){
-    //location.reload()
+    clearInterval(gameInterval);
+    location.reload();
 }
 
 function spawnEnemy(speedstersToSpawn, ninjasToSpawn, tanksToSpawn){
-    let offset = 10;
-    let randPos;
-
     let enemyTypesLeftToSpawn = ["speedster", "ninja", "tank"];
-    const enemyTypesOrder = ["speedster", "ninja", "tank"];
-
     let enemiesToSplice = [];
 
     if(enemiesSpawned.speedster === speedstersToSpawn){
@@ -263,13 +260,12 @@ function spawnEnemy(speedstersToSpawn, ninjasToSpawn, tanksToSpawn){
     //sort array
     enemiesToSplice.sort();
 
-    let enemiesSpliced = 0;
     for (let i = 0; i < enemiesToSplice.length; i++){
-        enemyTypesLeftToSpawn.splice(enemiesToSplice[i] - enemiesSpliced, 1);
-        enemiesSpliced++;
+        enemyTypesLeftToSpawn.splice(enemiesToSplice[i] - i, 1);
     }
     
     //determines if they should spawn any where on the left/right or anywhere on the top/bottom
+    let randPos;
     let j = Math.random();
     if(j <= .5){
         randPos = new Vector2(Math.round(Math.random()) * canvas.width, Math.random() * canvas.height);
@@ -277,42 +273,25 @@ function spawnEnemy(speedstersToSpawn, ninjasToSpawn, tanksToSpawn){
     else{
         randPos = new Vector2(Math.random() * canvas.width, Math.round(Math.random()) * canvas.height);
     }
+    
+    let typeToSpawn = Math.round(Math.random() * (enemyTypesLeftToSpawn.length - 1));
 
-    console.log(enemyTypesLeftToSpawn);
+    enemies.push(new Enemy(randPos, new Vector2(0, 0), enemyTypesLeftToSpawn[typeToSpawn]));
 
-    if(lastSpawnedEnemy !== runtime){
-        let typeToSpawn = Math.round(Math.random() * enemyTypesLeftToSpawn.length - 1);
-
-        enemies.push(new Enemy(randPos, new Vector2(0, 0), enemyTypesLeftToSpawn[typeToSpawn]));
-        if(typeToSpawn === 0){
-            enemyTypesLeftToSpawn.splice(0, 1);
-            enemiesSpawned.speedster++;
-        }
-        else if(typeToSpawn === 1){
-            enemyTypesLeftToSpawn.splice(1, 1);
-            enemiesSpawned.ninja++;
-        }
-        else{
-            enemyTypesLeftToSpawn.splice(2, 1);
-            enemiesSpawned.tank++;
-        }
-        
-        lastSpawnedEnemy = runtime;
+    if(typeToSpawn === 0){
+        enemyTypesLeftToSpawn.splice(0, 1);
+        enemiesSpawned.speedster++;
     }
-}
-
-function waveComplete(speedstersToSpawn, ninjasToSpawn, tanksToSpawn){
-    if(enemiesSpawned.speedster === speedstersToSpawn && enemiesSpawned.ninja === ninjasToSpawn && enemiesSpawned.tank === tanksToSpawn){
-        return true;
+    else if(typeToSpawn === 1){
+        enemyTypesLeftToSpawn.splice(1, 1);
+        enemiesSpawned.ninja++;
     }
-    return false;
-}
-
-function spawnBoss(boss){
-    if (wave % 5 === 0){
-        spawnEnemy(boss)
-        // sigma 
+    else{
+        enemyTypesLeftToSpawn.splice(2, 1);
+        enemiesSpawned.tank++;
     }
+    
+    lastSpawnedEnemy = runtime;
 }
 
 function spawnPowerup(){
@@ -375,23 +354,17 @@ function drawHUD(){
     ctx.fillText("Wave: " + wave, canvas.width / 2, 50);
 }
 
-function drawPowerup(powerup){
-    if(powerup.element === "poison"){
-        ctx.drawImage(sprites.poison, powerup.pos.x, powerup.pos.y);
-    }
-    else{
-        ctx.fillStyle = powerup.color;
-        ctx.fillRect(powerup.pos.x, powerup.pos.y, 50, 50);
-    }
-}
-
 function gameLoop(){
+    if (gameOverState){
+        gameOver();
+        return;
+    }
+
     let bulletsToDelete = [];
     let enemiesToDelete = [];
     let powerupsToDelete = [];
-    let bossTesting = false
 
-    movePlayer();
+    player.move();
     
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -404,19 +377,18 @@ function gameLoop(){
     for (let i = 0; i < bullets.length; i++) {
         let b = bullets[i];
         
-        if(runtime - b.timeAlive >= bulletLifespan){
+        if(runtime - b.timeAlive >= b.lifespan){
             bulletsToDelete.push(i);
         }
 
-        b.pos.x += b.vel.x * bulletSpeed;
-        b.pos.y += b.vel.y * bulletSpeed;
+        b.pos.x += b.vel.x * b.speed;
+        b.pos.y += b.vel.y * b.speed;
 
         ctx.fillStyle = "black";
         ctx.fillRect(b.pos.x - (b.size / 2), b.pos.y - (b.size / 2), 10, 10);
     }
 
-    //draw player
-    ctx.drawImage(sprites.player, player.pos.x - (player.width / 2), player.pos.y - (player.height / 2));
+    player.draw();
 
     for (let i = 0; i < enemies.length; i++) {
         let enemy = enemies[i];
@@ -444,9 +416,10 @@ function gameLoop(){
             damageTakenMultiplier = 2;
         }
 
-        drawEnemy(enemy);
+        enemy.draw();
+
         if(!stun){
-            moveEnemy(enemy);
+            enemy.move();
         }
 
         if(enemy.elementCooldown != runtime){
@@ -458,14 +431,12 @@ function gameLoop(){
             enemy.elementCooldown = runtime;
         }
 
+        //ninja dash
         if(enemy.type === "ninja" && enemy.element !== "ice"){
             if(runtime - enemyTypes[enemy.type].cooldown >= enemy.previousRuntime){
-                //cooldown over, use ability
-                let dX = player.pos.x - enemy.pos.x;
-                let dY = player.pos.y - enemy.pos.y;
-                let dLength = Math.sqrt(dX ** 2 + dY ** 2);
+                let d = new Vector2(player.pos.x - enemy.pos.x, player.pos.y - enemy.pos.y);
+                let newVel = d.Normalize();
 
-                newVel = new Vector2(dX / dLength, dY / dLength);
                 enemy.pos.x += newVel.x * 100;
                 enemy.pos.y += newVel.y * 100;
                 enemy.previousRuntime = runtime;
@@ -473,14 +444,11 @@ function gameLoop(){
             }
         }
 
-        if(Math.abs(player.pos.x - enemy.pos.x) <= (player.width / 2) + (enemy.size / 2)){
-            if(Math.abs(player.pos.y - enemy.pos.y) <= (player.height / 2) + (enemy.size / 2)){
-                let dX = enemy.pos.x - player.pos.x;
-                let dY = enemy.pos.y - player.pos.y;
-
-                let dLength = Math.sqrt(dX ** 2 + dY ** 2);
-
-                newVel = new Vector2(dX / dLength, dY / dLength);
+        //enemy knockback on player collision
+        if(Math.abs(player.pos.x - enemy.pos.x) <= (player.size / 2) + (enemy.size / 2)){
+            if(Math.abs(player.pos.y - enemy.pos.y) <= (player.size / 2) + (enemy.size / 2)){
+                let d = new Vector2(enemy.pos.x - player.pos.x, enemy.pos.y - player.pos.y);
+                let newVel = d.Normalize();
 
                 enemy.pos.x += newVel.x * 200;
                 enemy.pos.y += newVel.y * 200;
@@ -511,10 +479,10 @@ function gameLoop(){
     for (let i = 0; i < powerups.length; i++){
         let powerup = powerups[i];
 
-        drawPowerup(powerup);
+        powerup.draw();
 
-        if(Math.abs(powerup.pos.x - player.pos.x) <= (powerup.size / 2) + (player.width / 2)){
-            if(Math.abs(powerup.pos.y - player.pos.y) <= (powerup.size / 2) + (player.height / 2)){
+        if(Math.abs(powerup.pos.x - player.pos.x) <= (powerup.size / 2) + (player.size / 2)){
+            if(Math.abs(powerup.pos.y - player.pos.y) <= (powerup.size / 2) + (player.size / 2)){
                 powerupsToDelete.push(i);
                 player.element = powerup.element;
                 player.lastCollectedElement = runtime;
@@ -526,9 +494,6 @@ function gameLoop(){
         player.element = "";
     }
 
-    let enemiesRemoved = 0;
-    let bulletsRemoved = 0;
-    let powerupsRemoved = 0;
     bulletsToDelete.sort();
     enemiesToDelete.sort();
     powerupsToDelete.sort();
@@ -543,18 +508,15 @@ function gameLoop(){
     }
     //remove all bullets from list with no repeats
     for (let i = 0; i < bulletsToDelete.length; i++) {
-        bullets.splice(bulletsToDelete[i] - bulletsRemoved, 1);
-        bulletsRemoved++;
+        bullets.splice(bulletsToDelete[i] - i, 1);
     }
     
     for (let i = 0; i < enemiesToDelete.length; i++){
-        enemies.splice(enemiesToDelete[i] - enemiesRemoved, 1);
-        enemiesRemoved++;
+        enemies.splice(enemiesToDelete[i] - i, 1);
     }
 
     for (let i = 0; i < powerupsToDelete.length; i++){
-        powerups.splice(powerupsToDelete[i] - powerupsRemoved, 1);
-        powerupsRemoved++;
+        powerups.splice(powerupsToDelete[i] - i, 1);
     }
 
     if(runtime > lastTimePowerupSpawned + powerupCooldown){
@@ -573,23 +535,21 @@ function gameLoop(){
         tanksToSpawn = 0;
     }
 
-    if (!bossTesting){
-        if(!waveComplete(speedstersToSpawn, ninjasToSpawn, tanksToSpawn)){
+    if(!(enemiesSpawned.speedster === speedstersToSpawn && enemiesSpawned.ninja === ninjasToSpawn && enemiesSpawned.tank === tanksToSpawn)){
+        if(lastSpawnedEnemy !== runtime){
             spawnEnemy(speedstersToSpawn, ninjasToSpawn, tanksToSpawn);
         }
-        else if(enemies.length === 0){
-            wave++;
-            enemiesSpawned.speedster = 0;
-            enemiesSpawned.ninja = 0;
-            enemiesSpawned.tank = 0;
-        }
-
-        if (player.health <= 0){
-            gameOver();
-        }
+        
     }
-    else{
-        spawnBoss("gabe");
+    else if(enemies.length === 0){
+        wave++;
+        enemiesSpawned.speedster = 0;
+        enemiesSpawned.ninja = 0;
+        enemiesSpawned.tank = 0;
+    }
+
+    if (player.health <= 0){
+        gameOverState = true;
     }
 
     drawHUD();
@@ -604,4 +564,5 @@ document.getElementById("canvas").onmousewheel = function(event){
 };
 
 countSeconds();
-setInterval(() => {gameLoop()}); 
+const player = new Player();
+let gameInterval = setInterval(() => {gameLoop()}); 
