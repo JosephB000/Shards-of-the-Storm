@@ -27,7 +27,10 @@ const elementInfectionDuration = 5;
 const elementPlayerDuration = 10;
 
 let lastTimePowerupSpawned = 0;
-const powerupCooldown = 5;
+const powerupCooldown = 30;
+
+const waveToSpawnNinja = 5;
+const waveToSpawnTank = 9;
 
 const sprites = {
     player: new Image(),
@@ -240,8 +243,32 @@ function gameOver(){
 
 function spawnEnemy(speedstersToSpawn, ninjasToSpawn, tanksToSpawn){
     let offset = 10;
-    
     let randPos;
+
+    let enemyTypesLeftToSpawn = ["speedster", "ninja", "tank"];
+    const enemyTypesOrder = ["speedster", "ninja", "tank"];
+
+    let enemiesToSplice = [];
+
+    if(enemiesSpawned.speedster === speedstersToSpawn){
+        enemiesToSplice.push(0);
+    }
+    if(enemiesSpawned.ninja === ninjasToSpawn){
+        enemiesToSplice.push(1);
+    }
+    if(enemiesSpawned.tank === tanksToSpawn){
+        enemiesToSplice.push(2);
+    }
+
+    //sort array
+    enemiesToSplice.sort();
+
+    let enemiesSpliced = 0;
+    for (let i = 0; i < enemiesToSplice.length; i++){
+        enemyTypesLeftToSpawn.splice(enemiesToSplice[i] - enemiesSpliced, 1);
+        enemiesSpliced++;
+    }
+    
     //determines if they should spawn any where on the left/right or anywhere on the top/bottom
     let j = Math.random();
     if(j <= .5){
@@ -251,24 +278,25 @@ function spawnEnemy(speedstersToSpawn, ninjasToSpawn, tanksToSpawn){
         randPos = new Vector2(Math.random() * canvas.width, Math.round(Math.random()) * canvas.height);
     }
 
-    //console.log(randPos);
+    console.log(enemyTypesLeftToSpawn);
 
     if(lastSpawnedEnemy !== runtime){
-        if(enemiesSpawned.speedster !== speedstersToSpawn){
-            //spawn speedster
-            enemies.push(new Enemy(randPos, new Vector2(0, 0), "speedster"));
+        let typeToSpawn = Math.round(Math.random() * enemyTypesLeftToSpawn.length - 1);
+
+        enemies.push(new Enemy(randPos, new Vector2(0, 0), enemyTypesLeftToSpawn[typeToSpawn]));
+        if(typeToSpawn === 0){
+            enemyTypesLeftToSpawn.splice(0, 1);
             enemiesSpawned.speedster++;
         }
-        else if(enemiesSpawned.ninja !== ninjasToSpawn){
-            //spawn ninja
-            enemies.push(new Enemy(randPos, new Vector2(0, 0), "ninja"));
+        else if(typeToSpawn === 1){
+            enemyTypesLeftToSpawn.splice(1, 1);
             enemiesSpawned.ninja++;
         }
-        else if(enemiesSpawned.tank !== tanksToSpawn){
-            //spawn tank
-            enemies.push(new Enemy(randPos, new Vector2(0, 0), "tank"));
+        else{
+            enemyTypesLeftToSpawn.splice(2, 1);
             enemiesSpawned.tank++;
         }
+        
         lastSpawnedEnemy = runtime;
     }
 }
@@ -535,8 +563,8 @@ function gameLoop(){
     }
 
     let speedstersToSpawn = wave * 3;
-    let ninjasToSpawn = (wave - 8) * (5);
-    let tanksToSpawn = (wave - 13) * (5);
+    let ninjasToSpawn = (wave - waveToSpawnNinja + 1) * (5);
+    let tanksToSpawn = (wave - waveToSpawnTank + 1) * (5);
 
     if(ninjasToSpawn < 0){
         ninjasToSpawn = 0;
