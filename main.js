@@ -27,13 +27,16 @@ const elementInfectionDuration = 5;
 const elementPlayerDuration = 10;
 
 let lastTimePowerupSpawned = 0;
-const powerupCooldown = 45;
+const powerupCooldown = 5;
 
 const sprites = {
-    ninja: new Image()
+    player: new Image(),
+    ninja: new Image(),
+    poison: new Image()
 }
-
 sprites.ninja.src = "sprites/ninja.png";
+sprites.player.src = "sprites/maincharacter.png";
+sprites.poison.src = "sprites/poison.png";
 
 const Vector2 = class {
     constructor(x, y){
@@ -339,9 +342,19 @@ function drawHUD(){
     ctx.fillStyle = "black";
     ctx.fillText(player.health + "/" + maxHealth + " Health", 10, 100);
 
-    //draw health
+    //draw wave
     ctx.fillStyle = "black";
     ctx.fillText("Wave: " + wave, canvas.width / 2, 50);
+}
+
+function drawPowerup(powerup){
+    if(powerup.element === "poison"){
+        ctx.drawImage(sprites.poison, powerup.pos.x, powerup.pos.y);
+    }
+    else{
+        ctx.fillStyle = powerup.color;
+        ctx.fillRect(powerup.pos.x, powerup.pos.y, 50, 50);
+    }
 }
 
 function gameLoop(){
@@ -375,8 +388,7 @@ function gameLoop(){
     }
 
     //draw player
-    ctx.fillStyle = "#50B2C0";
-    ctx.fillRect(player.pos.x - (player.width / 2), player.pos.y - (player.height / 2), player.width, player.height);
+    ctx.drawImage(sprites.player, player.pos.x - (player.width / 2), player.pos.y - (player.height / 2));
 
     for (let i = 0; i < enemies.length; i++) {
         let enemy = enemies[i];
@@ -471,8 +483,7 @@ function gameLoop(){
     for (let i = 0; i < powerups.length; i++){
         let powerup = powerups[i];
 
-        ctx.fillStyle = powerup.color;
-        ctx.fillRect(powerup.pos.x, powerup.pos.y, 50, 50);
+        drawPowerup(powerup);
 
         if(Math.abs(powerup.pos.x - player.pos.x) <= (powerup.size / 2) + (player.width / 2)){
             if(Math.abs(powerup.pos.y - player.pos.y) <= (powerup.size / 2) + (player.height / 2)){
