@@ -54,7 +54,10 @@ const Vector2 = class {
     Normalize(){
         let z = Math.sqrt(this.x ** 2 + this.y ** 2);
 
-        return new Vector2(this.x / z, this.y / z);
+        if(z > 0){
+            return new Vector2(this.x / z, this.y / z);
+        }
+        return new Vector2(0, 0);
     }
 }
 
@@ -160,11 +163,12 @@ const Player = class{
     }
 
     move(){
+        this.vel = this.vel.Normalize();
         if((this.pos.x + (this.size / 2)) + this.vel.x <= canvas.width && (this.pos.x - (this.size / 2)) + this.vel.x >= 0){
-            this.pos.x += this.vel.x;
+            this.pos.x += this.vel.x * player.moveSpeed;
         }
         if((this.pos.y + (this.size / 2)) + this.vel.y <= canvas.height && (this.pos.y - (this.size / 2)) + this.vel.y >= 0){
-            this.pos.y += this.vel.y;
+            this.pos.y += this.vel.y * player.moveSpeed;
         }
     }
 
@@ -193,26 +197,25 @@ canvas.addEventListener("click", (event) => {
 })
 
 document.addEventListener("keydown", (event) => {
-    if(event.key == "w" && player.pos.y < canvas.height){
-        player.vel.y = -player.moveSpeed;
+    if(event.key == "w"){
+        player.vel.y = -1;
     }
     else if(event.key == "s"){
-        player.vel.y = player.moveSpeed;
+        player.vel.y = 1;
     }
     else if(event.key == "a"){
-        player.vel.x = -player.moveSpeed;
+        player.vel.x = -1;
     }
     else if(event.key == "d"){
-        player.vel.x = player.moveSpeed;
+        player.vel.x = 1;
     }
     else if(event.key == "r"){
-        //reload
         if(player.ammo !== maxAmmo && reloaded){
             reloaded = false;
             timeSinceReload = runtime;
         }
     }
-
+    
 })
 
 document.addEventListener("keyup", (event) => {
@@ -368,7 +371,13 @@ function gameLoop(){
     
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    //reload after reload time
+    //auto reload
+    if(player.ammo === 0 && reloaded){
+        reloaded = false;
+        timeSinceReload = runtime;
+    }
+
+    //complete reload after reload time
     if(!reloaded && runtime > timeSinceReload + reloadTime){
         player.ammo = maxAmmo;
         reloaded = true;
