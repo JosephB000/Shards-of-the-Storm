@@ -35,7 +35,7 @@ these are things I would like to add but not sure If i will get around to it. If
 - [ ]  lock screen size
 - [ ]  add speed lines for ninja’s dash
 - [ ]  if you click the player, the player doesn’t shoot
-- [ ]  replace everything with pixel art(from bawa)
+- [ ]  replace everything with pixel art(from pixel artist)
 - [ ]  start + tutorial page + end screen
 - [ ]  sound effects
 - [ ]  music
