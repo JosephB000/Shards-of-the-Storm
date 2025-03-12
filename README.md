@@ -1,4 +1,6 @@
 # Shards of the Storm
+**<a href="https://josephb000.github.io/Shards-of-the-Storm/">Play Now!</a>**
+
 ## Premise
 Shards of the Storm is a top-down shooter roguelike with the goal to survive as many waves as possible. Collect elemental powerups to infuse your bullets with different abilites, making it easier to kill enemies.
 
