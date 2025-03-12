@@ -11,14 +11,20 @@ let powerups = [];
 const maxHealth = 10;
 
 const maxAmmo = 30;
+const fireRate = .1;
 const reloadTime = 1.5;
 let timeSinceReload = 0;
 let reloaded = true;
+let lastTimeShot = 0;
+
+let mouseDown = false;
+let mousePos;
 
 let runtime = 0;
 
 let wave = 1;
 let lastSpawnedEnemy = 0;
+let spawnRate = 1;
 let enemiesSpawned = {speedster: 0, ninja: 0, tank: 0};
 
 const elementInfectionDuration = 5;
@@ -187,13 +193,20 @@ const Player = class{
     }
 }
 
+document.addEventListener("mousemove", (event) => {
+    mousePos = new Vector2(event.clientX, event.clientY);
+})
+
+document.onmousedown = () => {
+    mouseDown = true;
+}
+
+document.onmouseup = () => {
+    mouseDown = false;
+}
+
 canvas.addEventListener("click", (event) => {
-    if(player.ammo > 0 && reloaded){
-        let mousePos = new Vector2(event.pageX, event.pageY);
-        player.shoot(mousePos);
-        player.ammo--;
-    }
-    
+    lastTimeShot = runtime;
 })
 
 document.addEventListener("keydown", (event) => {
@@ -233,12 +246,16 @@ document.addEventListener("keyup", (event) => {
     }
 })
 
+function init(){
+    mousePos = new Vector2(0, 0);
+}
+
 function countSeconds(){
     let timeoutId = setTimeout(() => {
-        runtime++;
+        runtime+=.01;
         clearTimeout(timeoutId);
         countSeconds();
-    }, 1000);
+    }, 10);
 }
 
 function gameOver(){
@@ -345,8 +362,12 @@ function drawHUD(){
     ctx.fillText("/" + maxAmmo, offset, 50);
 
     //draw element
-    ctx.fillStyle = elementColors[player.element];
-    ctx.fillRect(70 + offset, 10, 50, 50);
+    if(elementColors[player.element] !== undefined){
+        ctx.fillStyle = elementColors[player.element];
+        ctx.fillRect(70 + offset, 10, 50, 50);
+    }
+    
+    
 
     //draw health
     ctx.fillStyle = "black";
@@ -361,6 +382,17 @@ function gameLoop(){
     if (gameOverState){
         gameOver();
         return;
+    }
+    
+    if(mouseDown && runtime > lastTimeShot + fireRate && player.ammo > 0 && reloaded){
+        //if mouse is not over player
+        if (!(mousePos.x > player.pos.x - (player.size / 2) && mousePos.x < player.pos.x + (player.size / 2) && mousePos.y > player.pos.y - (player.size / 2) && mousePos.y < player.pos.y + (player.size / 2))){
+                mouseDown = true;
+                player.shoot(mousePos);
+                player.ammo--;
+                lastTimeShot = runtime;
+        }
+        
     }
 
     let bulletsToDelete = [];
@@ -545,7 +577,7 @@ function gameLoop(){
     }
 
     if(!(enemiesSpawned.speedster === speedstersToSpawn && enemiesSpawned.ninja === ninjasToSpawn && enemiesSpawned.tank === tanksToSpawn)){
-        if(lastSpawnedEnemy !== runtime){
+        if(runtime > lastSpawnedEnemy + spawnRate){
             spawnEnemy(speedstersToSpawn, ninjasToSpawn, tanksToSpawn);
         }
         
@@ -573,5 +605,6 @@ document.getElementById("canvas").onmousewheel = function(event){
 };
 
 countSeconds();
+init();
 const player = new Player();
 let gameInterval = setInterval(() => {gameLoop()}); 
