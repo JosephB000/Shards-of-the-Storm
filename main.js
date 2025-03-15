@@ -34,14 +34,14 @@ let lastTimePowerupSpawned = 0;
 const powerupCooldown = 30;
 
 const waveToSpawnNinja = 5;
-const waveToSpawnTank = 9;
+const waveToSpawnTank = 10;
 
 let gameOverState = false;
 
 const enemyTypes = {
-    "speedster": {speed: 1.3, health: 1, size: 40, cooldown: 0, damage: 1},
-    "ninja": {speed: 1, health: 2, size: 50, cooldown: 3, damage: 2.5},
-    "tank": {speed: .7, health: 4, size: 65, cooldown: 0, damage: 4}
+    "speedster": {speed: 2.7, health: 1, size: 40, cooldown: 0, damage: 1},
+    "ninja": {speed: 2, health: 2, size: 50, cooldown: 1.5, damage: 2.5},
+    "tank": {speed: 1.2, health: 4, size: 65, cooldown: 0, damage: 4}
 }
 
 const elementColors = {
@@ -124,11 +124,11 @@ const Enemy = class {
     }
 
     move(){
-        this.vel.x = Math.sign(player.pos.x - this.pos.x) * this.speed;
-        this.vel.y = Math.sign(player.pos.y - this.pos.y) * this.speed;
+        let d = new Vector2(player.pos.x - this.pos.x, player.pos.y - this.pos.y);
+        let newVel = d.Normalize();
 
-        this.pos.x += this.vel.x;
-        this.pos.y += this.vel.y;
+        this.pos.x += newVel.x * this.speed;
+        this.pos.y += newVel.y * this.speed;
     }
 }
 
@@ -495,6 +495,7 @@ function gameLoop(){
                 enemy.pos.y += newVel.y * 200;
 
                 player.health -= enemy.damage / damageDeduction;
+                enemy.health -= .5;
             }
         }
 
